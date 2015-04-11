@@ -1,0 +1,280 @@
+%Regulacja
+clear all
+clc
+format long g
+dane=dlmread('dane5.txt');
+dane_org=dane;
+xsr=mean(dane(:,1));
+ysr=mean(dane(:,2));
+xp=dane(:,1)-xsr;
+yp=dane(:,2)-ysr;
+dane=[xp, yp];
+[w,k]=size(dane)
+% figure
+% plot(dane(:,1),dane(:,2))
+for i=1:6
+   eval(['Slope' num2str(i) '=[]']);
+end
+
+grad=@(x,y,z,w) (z-x)/(w-y)
+distance=@(x,y,z,w) sqrt((z-x)^2+(w-y)^2)
+x=dane(:,1);
+y=dane(:,2);
+
+%PARAMETRY
+edgeLength=2 %Długość ściany
+deltaPoint=3
+
+
+
+
+
+
+dsdir=[];
+disttemp=[];
+%Dla pierwszego, wyznaczamy xprim,yprim, dla ktorych obliczmamy odleglosci,
+%potem je usuwamy
+    xp=x(1)
+    yp=y(1)
+    while w>1
+for i=2:w
+    dist=distance(xp,yp,x(i),y(i));
+    disttemp=[disttemp;i,dist];
+
+end
+disttemp
+    mindist=min(disttemp(:,2))
+    inxtemp=find(mindist==(disttemp(:,2)))
+    nextpoint=disttemp(inxtemp,:)
+    inx=nextpoint(1)
+   
+    new_rec=dane(inx,:)
+    dane(inx,:)=[];%usuniecie najblizszego punktu
+    dane(1,:)=[];%usuniecie starego punktu prim
+    dane=[new_rec;dane] %wstawienie najblizszego punktu na poczatek
+    dsdir=[dsdir;xp,yp,mindist] %tutaj wchodzi punkt prim i odleglosc do najblizszego
+    xp=new_rec(1)
+    yp=new_rec(2)
+    x=dane(:,1);
+    y=dane(:,2);
+    [w,k]=size(dane)
+    disttemp=[]
+    end
+    dsdir=[dsdir;dane(:,:),0]
+%     plot(dsdir(:,1),dsdir(:,2))
+    dane=dsdir(:,1:2);
+    [w,k]=size(dane)
+%     dsdir=[dsdir;dane(inxtemp(i+1),:),disttemp(inxtemp,2)]
+    
+x=dane(:,1);
+y=dane(:,2);
+for i=1:w-1
+d=grad(x(i),y(i),x(i+1),y(i+1))
+if d>=0
+Slope1=[Slope1;dane(i,:),d]
+else
+    Slope2=[Slope2;dane(i,:),d]
+end
+end
+d=(x(end)-x(1))/(y(end)-y(1))
+if d>=0
+Slope1=[Slope1;dane(i,:),d]
+else
+    Slope2=[Slope2;dane(i,:),d]
+end
+[w1,k1]=size(Slope1)
+[w2,k2]=size(Slope2)
+%Dla Slope1
+for i=1:w1-1
+ x=Slope1(:,1)
+ y=Slope1(:,2)
+d=grad(x(i),y(i),x(i+1),y(i+1))
+dist=distance(x(i),y(i),x(i+1),y(i+1))
+if d>=0
+Slope3=[Slope3;Slope1(i,1:2),d, dist]
+else
+    Slope4=[Slope4;Slope1(i,1:2),d,dist]
+end
+end
+d=(x(end)-x(1))/(y(end)-y(1))
+dist=sqrt((x(end)-x(1))^2+(y(end)-y(1))^2)
+if d>=0
+Slope3=[Slope3;dane(i,:),d, dist]
+else
+    Slope4=[Slope4;dane(i,:),d, dist]
+end
+%Dla SLope2
+for i=1:w2-1
+ x=Slope2(:,1)
+ y=Slope2(:,2)
+d=grad(x(i),y(i),x(i+1),y(i+1))
+dist=distance(x(i),y(i),x(i+1),y(i+1))
+if d>=0
+Slope5=[Slope5;Slope2(i,1:2),d, dist]
+else
+    Slope6=[Slope6;Slope2(i,1:2),d, dist]
+end
+end
+d=(x(end)-x(1))/(y(end)-y(1))
+dist=sqrt((x(end)-x(1))^2+(y(end)-y(1))^2)
+if d>=0
+Slope5=[Slope5;dane(i,:),d, dist]
+else
+    Slope6=[Slope6;dane(i,:),d, dist]
+end
+
+[w3,k3]=size(Slope3)
+dist3=[]
+
+k=1
+edge1=[]
+for i=2:w3-1
+    x=Slope3(:,1);
+    y=Slope3(:,2);
+   dist=distance(x(i),y(i),x(i-1),y(i-1)); 
+   dist3=[dist3;dist];
+   if dist<deltaPoint
+       eval(['edge' num2str(k) '=[edge' num2str(k) ';x(i),y(i)]']);
+   else
+       k=k+1;
+       eval(['edge' num2str(k) '=[]']);
+       eval(['edge' num2str(k) '=[edge' num2str(k) ';x(i),y(i)]']);
+
+   end
+end
+
+
+
+[w6,k6]=size(Slope6)
+dist6=[]
+
+k=k+1
+eval(['edge' num2str(k) '=[]']);
+for i=2:w6-1
+    x=Slope6(:,1);
+    y=Slope6(:,2);
+   dist=distance(x(i),y(i),x(i-1),y(i-1)); 
+   dist6=[dist6;dist];
+   if dist<deltaPoint
+       eval(['edge' num2str(k) '=[edge' num2str(k) ';x(i),y(i)]']);
+   else
+       k=k+1;
+       eval(['edge' num2str(k) '=[]']);
+       eval(['edge' num2str(k) '=[edge' num2str(k) ';x(i),y(i)]']);
+
+   end
+end
+for i=1:4
+    
+   eval(['wymiar' num2str(i) '=size(edge' num2str(i) ')']);
+   eval(['j' num2str(i) '=ones(wymiar' num2str(i) '(1),1 )']);
+   eval(['z' num2str(i) '=zeros(wymiar' num2str(i) '(1),1 )']);
+end
+A1=[]
+for i=1:2
+   eval(['A1=[A1; edge' num2str(i) '(:,1) j' num2str(i) ' z' num2str(i) ']']);
+end
+Aod=[]
+for i=3:4
+eval(['odw=-(1./edge' num2str(i) ')']);
+eval(['Aod=[Aod;odw(:,1) z' num2str(i) ' j' num2str(i) ' ] ']);
+end
+% % 
+% % %wyrównanie y=ax+b1 y=-1/a x +b2
+A=[A1; Aod]
+% % % 
+L=[]
+for i=1:2
+   eval(['L=[L;edge' num2str(i) '(:,2) ]']) 
+end
+for i=3:4
+   eval(['L=[L; edge' num2str(i) '(:,2) ]']) 
+end
+
+b=pinv(A'*A)*A'*L
+Lob=A*b;
+r=Lob-L
+
+[p,o]=size(Aod)
+[u,y]=size(A)
+% 
+y1=[edge1(:,1)*b(1)+b(2)]
+y2=[edge2(:,1)*b(1)+b(2)]
+y3=[edge3(:,1)*-(1./b(1))+b(3)]
+y4=[edge4(:,1)*-(1./b(1))+b(3)]
+figure
+plot(edge1(:,1),y1, 'r')
+hold on
+plot(edge2(:,1),y2, 'r')
+hold on
+plot(edge3(:,1),y3 ,'r')
+hold on
+plot(edge4(:,1),y4)
+axis equal
+% hold on
+% plot(edge4(:,1), y4)
+% hold on
+% plot(edge7(:,1), y7)
+
+% A=[edgeK4(:,1) j4 z4]
+% L=[edgeK4(:,2)];
+% b=pinv(A'*A)*A'*L
+% Lob=A*b;
+% r=Lob-L
+% 
+% A1=[edgeK6(:,1) j6 z6];
+% L1=[
+%     edgeK6(:,2)];
+% b1=pinv(A1'*A1)*A1'*L1
+% Lob1=A1*b1;
+% r1=Lob1-L1
+% figure
+% % plot(edgeK3(:,1),edgeK3(:,2),'r')
+% % hold on
+% % plot(edgeK4(:,1),edgeK4(:,2))
+% for i=5:8
+%    x=eval(['edgeK' num2str(i)])(:,1)
+% %    y='edgeK{i}'(:,2)
+%    y=eval(['edgeK' num2str(i)])(:,2)
+%    plot(x,y)
+%    hold on
+%     
+% end
+% %WYKRESY
+% figure
+% x=Slope1(:,1)
+% y=Slope1(:,2)
+% plot(x,y,'rx')
+% hold on
+% xp=Slope2(:,1)
+% yp=Slope2(:,2)
+% plot(xp,yp,'o')
+% figure
+% x=Slope3(:,1)
+% y=Slope3(:,2)
+% plot(x,y,'rx')
+% hold on
+% xp=Slope4(:,1)
+% yp=Slope4(:,2)
+% plot(xp,yp,'o')
+% figure
+% x=Slope5(:,1)
+% y=Slope5(:,2)
+% plot(x,y,'rx')
+% hold on
+% xp=Slope6(:,1)
+% yp=Slope6(:,2)
+% plot(xp,yp,'o')
+
+
+
+
+
+
+% % for i=3:6
+% %    x=eval(['Slope' num2str(i) '(:,1)'])
+% %    y=eval(['Slope' num2str(i) '(:,2)'])
+% %    figure
+% %    plot(x,y,'x')
+% %    title('eval(['Slope' num2str(i)])')
+% % end
